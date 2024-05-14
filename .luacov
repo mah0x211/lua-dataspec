@@ -1,0 +1,7 @@
+codefromstrings = false
+runreport = true
+deletestats = true
+modules = {
+    ['dataspec.identifier'] = 'lib/identifier.lua',
+    ['dataspec.enum'] = 'lib/enum.lua',
+}
