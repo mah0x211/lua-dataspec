@@ -26,13 +26,17 @@ local is_callable = require('lauxhlib.is').callable
 local is_pint = require('lauxhlib.is').pint
 local fatalf = require('error.fatalf')
 
-local PAT_IDENT = '^[_a-zA-Z][_a-zA-Z0-9]*$'
+local VERIFIERS = {
+    FIELD_IDENT = '^[_a-zA-Z][_a-zA-Z0-9]*$',
+    PASCAL_IDENT = '^[A-Z][_a-zA-Z0-9]*$',
+}
 
---- verify_ident validate identifier tag string if the identifier is invalid,
---- then this function will raise an error.
+--- verify identifier tag string is match with specified pattern.
+--- if not match, then raise an error.
+--- @param pattern string
 --- @param tag string
 --- @param lv integer?
-local function verify_ident(tag, lv)
+local function verify_ident(pattern, tag, lv)
     if lv == nil then
         lv = 3
     elseif not is_pint(lv) then
@@ -41,22 +45,51 @@ local function verify_ident(tag, lv)
         lv = lv + 1
     end
 
-    if type(tag) ~= 'string' or not find(tag, PAT_IDENT) then
+    if type(tag) ~= 'string' or not find(tag, pattern) then
         fatalf(lv, 'identifier %q is not type of string in the form %q',
-               tostring(tag), PAT_IDENT)
+               tostring(tag), pattern)
     end
 end
 
+--- verify identifier tag string is match with '^[_a-zA-Z][_a-zA-Z0-9]*$' pattern.
+--- if not match, then raise an error.
+--- @param tag string
+--- @param lv integer?
+local function verify_field_ident(tag, lv)
+    return verify_ident(VERIFIERS.FIELD_IDENT, tag, lv)
+end
+
+--- verify identifier tag string is match with '^[A-Z][_a-zA-Z0-9]*$' pattern.
+--- if not match, then raise an error.
+--- @param tag string
+--- @param lv integer?
+local function verify_pascal_ident(tag, lv)
+    return verify_ident(VERIFIERS.PASCAL_IDENT, tag, lv)
+end
+
 --- @class dataspec.identifier
---- @field callback fun(name:string, ...):any
+--- @field private pattern string
+--- @field private callback fun(name:string, ...):any
 local Identifier = {}
 
 --- init
 --- @param callback function(name:string, ...):any
+--- @param pattern string? 'FIELD_IDENT' or 'PASCAL_IDENT' or custom pattern string (default: 'FIELD_IDENT')
 --- @return dataspec.identifier
-function Identifier:init(callback)
+function Identifier:init(callback, pattern)
     if not is_callable(callback) then
         fatalf(2, 'callback must be callable')
+    end
+
+    if pattern == nil then
+        self.pattern = VERIFIERS.FIELD_IDENT
+    elseif type(pattern) ~= 'string' or find(pattern, '^%s*$') then
+        fatalf(2, 'pattern must be non-empty string or nil')
+    else
+        self.pattern = VERIFIERS[pattern]
+        if not self.pattern then
+            self.pattern = pattern
+        end
     end
     self.callback = callback
     return self
@@ -66,7 +99,7 @@ end
 --- @param tag string
 --- @return fun(...):any
 function Identifier:__call(tag)
-    verify_ident(tag)
+    verify_ident(self.pattern, tag)
     return function(...)
         return self.callback(tag, ...)
     end
@@ -75,5 +108,7 @@ end
 return {
     new = require('metamodule').new(Identifier),
     verify_ident = verify_ident,
+    verify_field_ident = verify_field_ident,
+    verify_pascal_ident = verify_pascal_ident,
 }
 
