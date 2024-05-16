@@ -27,7 +27,7 @@ function testcase.create_enum()
     err = assert.throws(function()
         myenum.Name1 = 2
     end)
-    assert.match(err, 'attempt to change constant enum "myenum"')
+    assert.match(err, 'attempt to add a new property "Name1" to "myenum"')
 
     -- test that throw error if identifier is invalid
     err = assert.throws(function()

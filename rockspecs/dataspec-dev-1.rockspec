@@ -20,6 +20,7 @@ build = {
     modules = {
         ['dataspec.enum'] = "lib/enum.lua",
         ['dataspec.identifier'] = "lib/identifier.lua",
+        ['dataspec.unchangeable'] = "lib/unchangeable.lua",
     },
 }
 

@@ -23,19 +23,14 @@ local next = next
 local pairs = pairs
 local type = type
 local rawset = rawset
-local find = string.find
 local is_int = require('lauxhlib.is').int
 local fatalf = require('error.fatalf')
+local verify_pascal_ident = require('dataspec.identifier').verify_pascal_ident
 
---- @class dataspec.enum
+--- @class dataspec.enum : dataspec.unchangeable
 --- @field public tag string
 --- @field protected values table<string, number>
 local Enum = {}
-
---- __newindex raise an error
-function Enum:__newindex()
-    fatalf(2, 'attempt to change constant enum %q', self.tag)
-end
 
 --- __index returns the value of the identifier
 --- @param k string
@@ -47,9 +42,6 @@ function Enum:__index(k)
     end
     return v
 end
-
---- identifier must be start with uppercase letter
-local PAT_IDENT = '^[A-Z][_a-zA-Z0-9]*$'
 
 --- init
 --- @param tag string
@@ -67,11 +59,8 @@ function Enum:init(tag, tbl)
             id, val = val, id
         end
 
-        if type(id) ~= 'string' or not find(id, PAT_IDENT) then
-            fatalf(2,
-                   'member identifier %q is not type of string in the form %q',
-                   tostring(id), PAT_IDENT)
-        elseif values[id] then
+        verify_pascal_ident(id, 3)
+        if values[id] then
             fatalf(2, 'member identifier %q already defined', id)
         elseif not is_int(val) then
             fatalf(2, 'member identifier %q value %q must be integer', id, val)
@@ -95,7 +84,7 @@ function Enum:check(v)
     fatalf(2, 'argument#1 must be string')
 end
 
-Enum = require('metamodule').new(Enum)
+Enum = require('metamodule').new(Enum, 'dataspec.unchangeable')
 return require('dataspec.identifier').new(function(name, ...)
     return Enum(name, ...)
 end)
