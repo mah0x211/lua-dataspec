@@ -22,6 +22,7 @@
 local type = type
 local tostring = tostring
 local find = string.find
+local rawset = rawset
 local is_callable = require('lauxhlib.is').callable
 local is_pint = require('lauxhlib.is').pint
 local fatalf = require('error.fatalf')
@@ -67,7 +68,7 @@ local function verify_pascal_ident(tag, lv)
     return verify_ident(VERIFIERS.PASCAL_IDENT, tag, lv)
 end
 
---- @class dataspec.identifier
+--- @class dataspec.identifier : dataspec.unchangeable
 --- @field private pattern string
 --- @field private callback fun(name:string, ...):any
 local Identifier = {}
@@ -82,16 +83,17 @@ function Identifier:init(callback, pattern)
     end
 
     if pattern == nil then
-        self.pattern = VERIFIERS.FIELD_IDENT
+        rawset(self, 'pattern', VERIFIERS.FIELD_IDENT)
     elseif type(pattern) ~= 'string' or find(pattern, '^%s*$') then
         fatalf(2, 'pattern must be non-empty string or nil')
     else
-        self.pattern = VERIFIERS[pattern]
-        if not self.pattern then
-            self.pattern = pattern
+        local verifier = VERIFIERS[pattern]
+        if not verifier then
+            verifier = pattern
         end
+        rawset(self, 'pattern', verifier)
     end
-    self.callback = callback
+    rawset(self, 'callback', callback)
     return self
 end
 
@@ -106,7 +108,7 @@ function Identifier:__call(tag)
 end
 
 return {
-    new = require('metamodule').new(Identifier),
+    new = require('metamodule').new(Identifier, 'dataspec.unchangeable'),
     verify_ident = verify_ident,
     verify_field_ident = verify_field_ident,
     verify_pascal_ident = verify_pascal_ident,

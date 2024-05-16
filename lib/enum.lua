@@ -27,15 +27,10 @@ local is_int = require('lauxhlib.is').int
 local fatalf = require('error.fatalf')
 local verify_pascal_ident = require('dataspec.identifier').verify_pascal_ident
 
---- @class dataspec.enum
+--- @class dataspec.enum : dataspec.unchangeable
 --- @field public tag string
 --- @field protected values table<string, number>
 local Enum = {}
-
---- __newindex raise an error
-function Enum:__newindex()
-    fatalf(2, 'attempt to change constant enum %q', self.tag)
-end
 
 --- __index returns the value of the identifier
 --- @param k string
@@ -89,7 +84,7 @@ function Enum:check(v)
     fatalf(2, 'argument#1 must be string')
 end
 
-Enum = require('metamodule').new(Enum)
+Enum = require('metamodule').new(Enum, 'dataspec.unchangeable')
 return require('dataspec.identifier').new(function(name, ...)
     return Enum(name, ...)
 end)
